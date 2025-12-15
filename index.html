@@ -55,6 +55,20 @@
       .animate-shake {
         animation: shake 0.3s ease-in-out;
       }
+      
+      /* Loader styles for initial load before Tailwind kicks in */
+      #root:empty {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+      }
+      #root:empty::after {
+        content: "Loading...";
+        color: #14b8a6;
+        font-family: 'Inter', sans-serif;
+        animation: pulse 1.5s infinite;
+      }
     </style>
   <script type="importmap">
 {
@@ -70,7 +84,15 @@
 <link rel="stylesheet" href="/index.css">
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+        <!-- Visual fallback while React loads -->
+        <div class="flex flex-col items-center justify-center min-h-screen bg-black">
+            <div class="w-16 h-16 border-4 border-brand-900 border-t-brand-500 rounded-full animate-spin mb-4"></div>
+            <p class="text-brand-500 font-sans text-sm tracking-wider animate-pulse">INITIALIZING LAUNCHPAD...</p>
+        </div>
+    </div>
+    <!-- Entry point for the application - critical for build tools -->
+    <script type="module" src="./index.tsx"></script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>
