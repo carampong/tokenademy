@@ -1,4 +1,4 @@
-import { Network, NetworkConfig } from './types';
+import { Network, NetworkConfig } from './types.ts';
 
 // REPLACE THESE WITH YOUR ACTUAL WALLET ADDRESSES
 export const ADMIN_WALLETS = {

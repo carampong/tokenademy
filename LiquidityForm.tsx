@@ -1,6 +1,6 @@
 import React from 'react';
-import { LiquidityConfig, Network, TokenDetails } from '../types.ts';
-import { NETWORKS } from '../constants.ts';
+import { LiquidityConfig, Network, TokenDetails } from './types.ts';
+import { NETWORKS } from './constants.ts';
 import { ArrowLeft, ArrowRight, Lock, TrendingUp, Info } from 'lucide-react';
 
 interface LiquidityFormProps {

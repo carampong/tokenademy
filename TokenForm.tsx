@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { TokenDetails, Network } from '../types.ts';
-import { NETWORKS } from '../constants.ts';
-import { generateTokenContent } from '../services/geminiService.ts';
+import { TokenDetails, Network } from './types.ts';
+import { NETWORKS } from './constants.ts';
+import { generateTokenContent } from './geminiService.ts';
 import { Sparkles, Loader2, ArrowRight, ArrowLeft, Upload, Eye } from 'lucide-react';
 
 interface TokenFormProps {

@@ -6,6 +6,10 @@
     <title>TOKENADEMY - Launch Your Token</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Babel for in-browser transpilation -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <script>
       tailwind.config = {
         theme: {
@@ -38,7 +42,6 @@
         background-color: #000000;
         color: #ffffff;
       }
-      /* Custom scrollbar for terminal logs */
       .scrollbar-hide::-webkit-scrollbar {
           display: none;
       }
@@ -46,31 +49,176 @@
           -ms-overflow-style: none;
           scrollbar-width: none;
       }
-      
-      @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        75% { transform: translateX(5px); }
-      }
-      .animate-shake {
-        animation: shake 0.3s ease-in-out;
+      #root:empty {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
       }
     </style>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.1/",
-    "react": "https://esm.sh/react@^19.2.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.1/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.559.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.32.0"
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0"
   }
 }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+        <div class="flex flex-col items-center justify-center min-h-screen bg-black">
+            <div class="w-16 h-16 border-4 border-brand-900 border-t-brand-500 rounded-full animate-spin mb-4"></div>
+            <p id="loading-text" class="text-brand-500 font-sans text-sm tracking-wider animate-pulse">INITIALIZING LAUNCHPAD...</p>
+            <div id="error-container" class="hidden mt-6 max-w-md bg-red-900/20 border border-red-800 rounded p-4 text-center">
+                <p class="text-red-500 font-bold text-sm mb-1">INITIALIZATION FAILED</p>
+                <p id="error-text" class="text-red-400 font-mono text-xs break-all"></p>
+                <button onclick="location.reload()" class="mt-4 bg-red-800/30 hover:bg-red-800/50 text-red-200 px-4 py-2 rounded text-xs transition-colors">Try Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      // Determine base URL for GitHub Pages support
+      const getBaseUrl = () => {
+          let path = window.location.pathname;
+          if (path.endsWith('index.html')) {
+             path = path.substring(0, path.lastIndexOf('index.html'));
+          }
+          return path.endsWith('/') ? path : path + '/';
+      };
+      
+      const BASE_URL = getBaseUrl();
+      console.log("Base URL detected:", BASE_URL);
+
+      // FLAT STRUCTURE: All files are expected to be in the root directory
+      const projectFiles = [
+        'types.ts',
+        'constants.ts',
+        'geminiService.ts',        // Moved from services/
+        'NetworkSelection.tsx',    // Moved from components/
+        'TokenForm.tsx',
+        'LiquidityForm.tsx',
+        'PaymentGateway.tsx',
+        'DeploymentStatus.tsx', 
+        'WaitingForConfirmation.tsx',
+        'AdminPanel.tsx',
+        'App.tsx',
+        'index.tsx'
+      ];
+
+      const externalImports = {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1",
+        "@google/genai": "https://esm.sh/@google/genai@0.1.1"
+      };
+
+      function resolvePath(basePath, relativePath) {
+        // In a flat structure, ./ and ../ usually just resolve to the filename itself
+        // But we keep basic resolution just in case
+        if (!relativePath.startsWith('.')) return relativePath; 
+        
+        // Simple filename extraction for flat structure
+        // e.g. "./types.ts" -> "types.ts", "../constants" -> "constants"
+        const cleanPath = relativePath.split('/').pop();
+        return cleanPath;
+      }
+
+      function showError(msg) {
+          console.error(msg);
+          document.getElementById('loading-text').classList.add('hidden');
+          document.getElementById('error-container').classList.remove('hidden');
+          document.getElementById('error-text').textContent = msg;
+      }
+
+      async function loadProject() {
+        try {
+          console.log("Starting Tokenademy Loader (Flat Structure)...");
+          
+          const fileContents = {};
+          const blobUrls = {};
+
+          // 1. Fetch all files
+          await Promise.all(projectFiles.map(async (path) => {
+            const fetchPath = BASE_URL + path;
+            console.log(`Fetching: ${fetchPath}`);
+            
+            const res = await fetch(fetchPath);
+            if (!res.ok) throw new Error(`Failed to load ${path} (Status: ${res.status} at ${fetchPath})`);
+            fileContents[path] = await res.text();
+          }));
+
+          console.log("All files fetched. Transpiling...");
+
+          // 2. Process files
+          for (const path of projectFiles) {
+            let code = fileContents[path];
+
+            try {
+                const transpiled = Babel.transform(code, {
+                filename: path,
+                presets: ['react', 'typescript'],
+                }).code;
+
+                // Rewrite imports
+                const rewrited = transpiled.replace(/((?:import|export)\s+(?:[\s\S]*?from\s+)?['"])([^'"]+)(['"])/g, (match, prefix, importPath, suffix) => {
+                if (importPath.startsWith('.')) {
+                    // In flat structure, we just grab the filename
+                    let fileName = importPath.split('/').pop();
+                    
+                    // Handle extension guessing
+                    if (!fileName.includes('.')) {
+                         // Check if file exists with .ts or .tsx
+                         if (fileContents[fileName + '.ts']) fileName += '.ts';
+                         else if (fileContents[fileName + '.tsx']) fileName += '.tsx';
+                    }
+                    
+                    return `${prefix}app://${fileName}${suffix}`;
+                }
+                return match; 
+                });
+
+                const blob = new Blob([rewrited], { type: 'text/javascript' });
+                blobUrls[`app://${path}`] = URL.createObjectURL(blob);
+            } catch (e) {
+                throw new Error(`Babel Error in ${path}: ${e.message}`);
+            }
+          }
+
+          // 3. Inject Import Map
+          const imports = { ...externalImports };
+          Object.keys(blobUrls).forEach(key => {
+            imports[key] = blobUrls[key];
+          });
+
+          const mapEl = document.createElement('script');
+          mapEl.type = "importmap";
+          mapEl.textContent = JSON.stringify({ imports });
+          document.head.appendChild(mapEl);
+
+          console.log("Import map injected. Mounting app...");
+
+          // 4. Load Entry Point
+          const entryModule = 'app://index.tsx';
+          try {
+            await import(entryModule);
+          } catch (e) {
+             console.error(e);
+             throw new Error(`Module Import Error: ${e.message}`);
+          }
+
+        } catch (err) {
+          showError(err.message);
+        }
+      }
+
+      loadProject();
+    </script>
   <script type="module" src="/index.tsx"></script>
 </body>
 </html>

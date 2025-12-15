@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Step, Network, TokenDetails, LiquidityConfig } from './types';
-import { NETWORKS, ADMIN_WALLETS } from './constants';
-import NetworkSelection from '.NetworkSelection';
-import TokenForm from '.TokenForm';
-import LiquidityForm from '.LiquidityForm';
-import PaymentGateway from '.PaymentGateway';
-import DeploymentLog from '.DeploymentLog';
-import WaitingForConfirmation from '.WaitingForConfirmation';
-import AdminPanel from '.AdminPanel';
+import { Step, Network, TokenDetails, LiquidityConfig } from './types.ts';
+import { NETWORKS, ADMIN_WALLETS } from './constants.ts';
+import NetworkSelection from './NetworkSelection.tsx';
+import TokenForm from './TokenForm.tsx';
+import LiquidityForm from './LiquidityForm.tsx';
+import PaymentGateway from './PaymentGateway.tsx';
+import DeploymentStatus from './DeploymentStatus.tsx';
+import WaitingForConfirmation from './WaitingForConfirmation.tsx';
+import AdminPanel from './AdminPanel.tsx';
 import { Rocket, ShieldCheck, Coins, Menu, X, Wallet, Mail, HelpCircle, LineChart, Lock, Github } from 'lucide-react';
 
 type View = 'LAUNCHPAD' | 'HOW_IT_WORKS' | 'PRICING' | 'SUPPORT' | 'ADMIN';
@@ -121,7 +121,7 @@ const App: React.FC = () => {
         );
       case Step.DEPLOYMENT:
         return (
-          <DeploymentLog 
+          <DeploymentStatus
             data={tokenData} 
             network={selectedNetwork!}
             liquidityConfig={liquidityData} 

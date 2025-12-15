@@ -1,6 +1,6 @@
 import React from 'react';
-import { Network, NetworkConfig } from '../types.ts';
-import { NETWORKS } from '../constants.ts';
+import { Network, NetworkConfig } from './types.ts';
+import { NETWORKS } from './constants.ts';
 import { Check, ArrowRight } from 'lucide-react';
 
 interface NetworkSelectionProps {

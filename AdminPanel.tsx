@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { TokenDetails, Network, LiquidityConfig } from '../types.ts';
-import { NETWORKS } from '../constants.ts';
+import { TokenDetails, Network, LiquidityConfig } from './types.ts';
+import { NETWORKS } from './constants.ts';
 import { CheckCircle, XCircle, Search, LogOut, ExternalLink, Lock, Key, Loader2, ShieldCheck, Activity, Settings, Save, ArrowLeft, Code, Copy } from 'lucide-react';
 
 interface AdminPanelProps {

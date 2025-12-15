@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Network, LiquidityConfig } from '../types.ts';
-import { NETWORKS } from '../constants.ts';
+import { Network, LiquidityConfig } from './types.ts';
+import { NETWORKS } from './constants.ts';
 import { Copy, CheckCircle, Wallet, Loader2, AlertTriangle, Plus } from 'lucide-react';
 
 interface PaymentGatewayProps {
