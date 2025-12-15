@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { Step, Network, TokenDetails, LiquidityConfig } from './types.ts';
-import { NETWORKS, ADMIN_WALLETS } from './constants.ts';
-import NetworkSelection from './components/NetworkSelection.tsx';
-import TokenForm from './components/TokenForm.tsx';
-import LiquidityForm from './components/LiquidityForm.tsx';
-import PaymentGateway from './components/PaymentGateway.tsx';
-import DeploymentLog from './components/DeploymentLog.tsx';
-import WaitingForConfirmation from './components/WaitingForConfirmation.tsx';
-import AdminPanel from './components/AdminPanel.tsx';
+import { Step, Network, TokenDetails, LiquidityConfig } from './types';
+import { NETWORKS, ADMIN_WALLETS } from './constants';
+import NetworkSelection from './components/NetworkSelection';
+import TokenForm from './components/TokenForm';
+import LiquidityForm from './components/LiquidityForm';
+import PaymentGateway from './components/PaymentGateway';
+import DeploymentLog from './components/DeploymentLog';
+import WaitingForConfirmation from './components/WaitingForConfirmation';
+import AdminPanel from './components/AdminPanel';
 import { Rocket, ShieldCheck, Coins, Menu, X, Wallet, Mail, HelpCircle, LineChart, Lock, Github } from 'lucide-react';
 
 type View = 'LAUNCHPAD' | 'HOW_IT_WORKS' | 'PRICING' | 'SUPPORT' | 'ADMIN';
