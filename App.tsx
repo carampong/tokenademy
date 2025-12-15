@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Step, Network, TokenDetails, LiquidityConfig } from './types';
 import { NETWORKS, ADMIN_WALLETS } from './constants';
-import NetworkSelection from './components/NetworkSelection';
-import TokenForm from './components/TokenForm';
-import LiquidityForm from './components/LiquidityForm';
-import PaymentGateway from './components/PaymentGateway';
-import DeploymentLog from './components/DeploymentLog';
-import WaitingForConfirmation from './components/WaitingForConfirmation';
-import AdminPanel from './components/AdminPanel';
+import NetworkSelection from './NetworkSelection';
+import TokenForm from './TokenForm';
+import LiquidityForm from './LiquidityForm';
+import PaymentGateway from './PaymentGateway';
+import DeploymentLog from './DeploymentLog';
+import WaitingForConfirmation from './WaitingForConfirmation';
+import AdminPanel from './AdminPanel';
 import { Rocket, ShieldCheck, Coins, Menu, X, Wallet, Mail, HelpCircle, LineChart, Lock, Github } from 'lucide-react';
 
 type View = 'LAUNCHPAD' | 'HOW_IT_WORKS' | 'PRICING' | 'SUPPORT' | 'ADMIN';
