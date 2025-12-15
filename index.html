@@ -59,11 +59,11 @@
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0"
   }
 }
 </script>
@@ -74,12 +74,22 @@
         <div class="flex flex-col items-center justify-center min-h-screen bg-black">
             <div class="w-16 h-16 border-4 border-brand-900 border-t-brand-500 rounded-full animate-spin mb-4"></div>
             <p id="loading-text" class="text-brand-500 font-sans text-sm tracking-wider animate-pulse">INITIALIZING LAUNCHPAD...</p>
-            <p id="error-text" class="text-red-500 font-sans text-xs mt-4 hidden"></p>
+            <div id="error-container" class="hidden mt-6 max-w-md bg-red-900/20 border border-red-800 rounded p-4 text-center">
+                <p class="text-red-500 font-bold text-sm mb-1">INITIALIZATION FAILED</p>
+                <p id="error-text" class="text-red-400 font-mono text-xs break-all"></p>
+            </div>
         </div>
     </div>
 
     <script>
-      // Configuration for the dynamic loader
+      // Determine base URL for GitHub Pages support
+      // This ensures we fetch files from the correct path even in subdirectories
+      const getBaseUrl = () => {
+          const path = window.location.pathname;
+          return path.endsWith('/') ? path : path.substring(0, path.lastIndexOf('/') + 1);
+      };
+      const BASE_URL = getBaseUrl();
+
       const projectFiles = [
         'types.ts',
         'constants.ts',
@@ -102,12 +112,11 @@
         "@google/genai": "https://esm.sh/@google/genai@0.1.1"
       };
 
-      // Helper to resolve relative paths (./, ../) to absolute virtual paths
       function resolvePath(basePath, relativePath) {
-        if (!relativePath.startsWith('.')) return relativePath; // External import
+        if (!relativePath.startsWith('.')) return relativePath; 
         
         const stack = basePath.split('/');
-        stack.pop(); // Remove filename
+        stack.pop(); 
         
         const parts = relativePath.split('/');
         for (const part of parts) {
@@ -121,53 +130,67 @@
         return stack.join('/');
       }
 
+      function showError(msg) {
+          console.error(msg);
+          document.getElementById('loading-text').classList.add('hidden');
+          document.getElementById('error-container').classList.remove('hidden');
+          document.getElementById('error-text').textContent = msg;
+      }
+
       async function loadProject() {
         try {
+          console.log("Starting Tokenademy Loader...");
+          
           const fileContents = {};
           const blobUrls = {};
 
           // 1. Fetch all files
           await Promise.all(projectFiles.map(async (path) => {
-            const res = await fetch(path);
-            if (!res.ok) throw new Error(`Failed to load ${path}: ${res.statusText}`);
+            // Prepend BASE_URL to handle subdirectory hosting
+            const fetchPath = BASE_URL + path;
+            console.log(`Fetching: ${fetchPath}`);
+            
+            const res = await fetch(fetchPath);
+            if (!res.ok) throw new Error(`Failed to load ${path} (Status: ${res.status})`);
             fileContents[path] = await res.text();
           }));
 
-          // 2. Process files: Transpile & Rewrite Imports
+          console.log("All files fetched. Transpiling...");
+
+          // 2. Process files
           for (const path of projectFiles) {
             let code = fileContents[path];
 
             // Transpile TSX/TS to JS
-            const transpiled = Babel.transform(code, {
-              filename: path,
-              presets: ['react', 'typescript'],
-              // We don't use 'modules' transform here because we want ES modules output
-              // ensuring browser can parse imports/exports
-            }).code;
+            try {
+                const transpiled = Babel.transform(code, {
+                filename: path,
+                presets: ['react', 'typescript'],
+                }).code;
 
-            // Rewrite imports to use a virtual absolute scheme that we can map later
-            // We look for: import ... from '...' OR export ... from '...'
-            const rewrited = transpiled.replace(/((?:import|export)\s+(?:[\s\S]*?from\s+)?['"])([^'"]+)(['"])/g, (match, prefix, importPath, suffix) => {
-               if (importPath.startsWith('.')) {
-                 const resolved = resolvePath(path, importPath);
-                 // Check if the resolved path is in our project files
-                 // We might need to guess extensions if missing (e.g. import './types')
-                 let matchPath = resolved;
-                 if (!fileContents[matchPath]) {
-                    if (fileContents[matchPath + '.ts']) matchPath += '.ts';
-                    else if (fileContents[matchPath + '.tsx']) matchPath += '.tsx';
-                 }
-                 return `${prefix}app://${matchPath}${suffix}`;
-               }
-               return match; // Leave external imports alone
-            });
+                // Rewrite imports
+                const rewrited = transpiled.replace(/((?:import|export)\s+(?:[\s\S]*?from\s+)?['"])([^'"]+)(['"])/g, (match, prefix, importPath, suffix) => {
+                if (importPath.startsWith('.')) {
+                    const resolved = resolvePath(path, importPath);
+                    let matchPath = resolved;
+                    // Try to guess extension if it matches a known file
+                    if (!fileContents[matchPath]) {
+                        if (fileContents[matchPath + '.ts']) matchPath += '.ts';
+                        else if (fileContents[matchPath + '.tsx']) matchPath += '.tsx';
+                    }
+                    return `${prefix}app://${matchPath}${suffix}`;
+                }
+                return match; 
+                });
 
-            // Create Blob URL
-            const blob = new Blob([rewrited], { type: 'text/javascript' });
-            blobUrls[`app://${path}`] = URL.createObjectURL(blob);
+                const blob = new Blob([rewrited], { type: 'text/javascript' });
+                blobUrls[`app://${path}`] = URL.createObjectURL(blob);
+            } catch (e) {
+                throw new Error(`Babel Error in ${path}: ${e.message}`);
+            }
           }
 
-          // 3. Construct and Inject Import Map
+          // 3. Inject Import Map
           const imports = { ...externalImports };
           Object.keys(blobUrls).forEach(key => {
             imports[key] = blobUrls[key];
@@ -178,19 +201,18 @@
           mapEl.textContent = JSON.stringify({ imports });
           document.head.appendChild(mapEl);
 
+          console.log("Import map injected. Mounting app...");
+
           // 4. Load Entry Point
           const entryModule = 'app://index.tsx';
-          import(entryModule).catch(err => {
-            console.error("Runtime Error:", err);
-            document.getElementById('error-text').textContent = "Runtime Error: " + err.message;
-            document.getElementById('error-text').classList.remove('hidden');
-          });
+          try {
+            await import(entryModule);
+          } catch (e) {
+             throw new Error(`Module Import Error: ${e.message}`);
+          }
 
         } catch (err) {
-          console.error("Loader Error:", err);
-          document.getElementById('loading-text').textContent = "FAILED TO LOAD";
-          document.getElementById('error-text').textContent = err.message + ". Check console/network.";
-          document.getElementById('error-text').classList.remove('hidden');
+          showError(err.message);
         }
       }
 
