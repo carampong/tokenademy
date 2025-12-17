@@ -59,11 +59,11 @@
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
     "react/": "https://esm.sh/react@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "lucide-react": "https://esm.sh/lucide-react@^0.561.0"
+    "react": "https://esm.sh/react@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0"
   }
 }
 </script>
@@ -95,18 +95,18 @@
       const BASE_URL = getBaseUrl();
       console.log("Base URL detected:", BASE_URL);
 
-      // FLAT STRUCTURE: All files are expected to be in the root directory
+      // STRUCTURE: Nested structure as indicated by 404 errors on root access
       const projectFiles = [
         'types.ts',
         'constants.ts',
-        'geminiService.ts',
-        'NetworkSelection.tsx',
-        'TokenForm.tsx',
-        'LiquidityForm.tsx',
-        'PaymentGateway.tsx',
-        'DeploymentStatus.tsx', 
-        'WaitingForConfirmation.tsx',
-        'AdminPanel.tsx',
+        'services/geminiService.ts',
+        'components/NetworkSelection.tsx',
+        'components/TokenForm.tsx',
+        'components/LiquidityForm.tsx',
+        'components/PaymentGateway.tsx',
+        'components/DeploymentStatus.tsx', 
+        'components/WaitingForConfirmation.tsx',
+        'components/AdminPanel.tsx',
         'App.tsx',
         'index.tsx'
       ];
@@ -119,14 +119,21 @@
       };
 
       function resolvePath(basePath, relativePath) {
-        // In a flat structure, ./ and ../ usually just resolve to the filename itself
-        // But we keep basic resolution just in case
         if (!relativePath.startsWith('.')) return relativePath; 
         
-        // Simple filename extraction for flat structure
-        // e.g. "./types.ts" -> "types.ts", "../constants" -> "constants"
-        const cleanPath = relativePath.split('/').pop();
-        return cleanPath;
+        const stack = basePath.split('/');
+        stack.pop(); // Remove filename
+        
+        const parts = relativePath.split('/');
+        for (const part of parts) {
+          if (part === '.') continue;
+          if (part === '..') {
+            if (stack.length > 0) stack.pop();
+          } else {
+            stack.push(part);
+          }
+        }
+        return stack.join('/');
       }
 
       function showError(msg) {
@@ -138,7 +145,7 @@
 
       async function loadProject() {
         try {
-          console.log("Starting Tokenademy Loader (Flat Structure)...");
+          console.log("Starting Tokenademy Loader (Nested Structure)...");
           
           const fileContents = {};
           const blobUrls = {};
@@ -168,17 +175,28 @@
                 // Rewrite imports
                 const rewrited = transpiled.replace(/((?:import|export)\s+(?:[\s\S]*?from\s+)?['"])([^'"]+)(['"])/g, (match, prefix, importPath, suffix) => {
                 if (importPath.startsWith('.')) {
-                    // In flat structure, we just grab the filename
-                    let fileName = importPath.split('/').pop();
+                    const resolved = resolvePath(path, importPath);
+                    let matchPath = resolved;
                     
-                    // Handle extension guessing
-                    if (!fileName.includes('.')) {
-                         // Check if file exists with .ts or .tsx
-                         if (fileContents[fileName + '.ts']) fileName += '.ts';
-                         else if (fileContents[fileName + '.tsx']) fileName += '.tsx';
+                    // Specific fix for DeploymentLog -> DeploymentStatus if applicable
+                    if (matchPath.endsWith('DeploymentLog.tsx') && !fileContents[matchPath] && fileContents[matchPath.replace('DeploymentLog', 'DeploymentStatus')]) {
+                        matchPath = matchPath.replace('DeploymentLog.tsx', 'DeploymentStatus.tsx');
                     }
                     
-                    return `${prefix}app://${fileName}${suffix}`;
+                    // Try to guess extension if it matches a known file
+                    if (!fileContents[matchPath]) {
+                        if (fileContents[matchPath + '.ts']) matchPath += '.ts';
+                        else if (fileContents[matchPath + '.tsx']) matchPath += '.tsx';
+                    }
+                    
+                    // If simple resolution fails, try resolving strictly by filename (fallback for mixed structures)
+                    if (!fileContents[matchPath]) {
+                        const justName = importPath.split('/').pop();
+                         const found = projectFiles.find(p => p.endsWith(justName) || p.endsWith(justName + '.ts') || p.endsWith(justName + '.tsx'));
+                         if (found) matchPath = found;
+                    }
+
+                    return `${prefix}app://${matchPath}${suffix}`;
                 }
                 return match; 
                 });
